@@ -2,6 +2,8 @@
 
 [Русский](README.md) · **English**
 
+[Open the lab](https://andrewchaschin.github.io/microgpt-lab/)
+
 In this browser-based lab, a small transformer learns to predict the next letter of a word. Choose a Russian or English word, click **Train on** that word, and compare predictions before and after one training step. Click a block in the diagram to see its formula.
 
 ## Run locally
