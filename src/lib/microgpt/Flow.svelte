@@ -2,7 +2,8 @@
 	import { t } from '$lib/i18n';
 	import DiagramViewport from './DiagramViewport.svelte';
 	import GlossaryTerm from '~/components/GlossaryTerm.svelte';
-	import { words, type ForwardPosition, type Weight } from './model';
+	import { type ForwardPosition, type Weight } from './model';
+	import { corpora } from './corpora';
 	import type { Snapshot } from './training.worker';
 	import SignalProbe from './SignalProbe.svelte';
 	import type { Signal } from './signals';
@@ -52,6 +53,7 @@
 			weight: s.weight
 		});
 	}
+	$: ({ words } = corpora[snapshot.lesson.language]);
 	$: lesson = snapshot.lesson;
 	function resetCursor(selected: Snapshot['lesson']) {
 		playing = false;

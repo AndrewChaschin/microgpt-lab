@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fmt, t } from '$lib/i18n';
-	import { boundary, vocabulary, type Lesson } from './model';
+	import type { Lesson } from './model';
+	import { corpora } from './corpora';
 	import { operations } from './operationGraph';
 	import CircuitEdge from './CircuitEdge.svelte';
 	import type SignalProbe from './SignalProbe.svelte';
@@ -15,6 +16,7 @@
 	const cellWidth = 58;
 	const center = (index: number) => labelWidth + (index + 0.5) * cellWidth;
 	const reader = operations.find((node) => node.id === 'symbol')!;
+	$: ({ boundary, vocabulary } = corpora[lesson.language]);
 	$: symbol = (id: number, end = false) =>
 		id === boundary ? (end ? $t('конец') : $t('начало')) : vocabulary[id];
 	$: count = lesson.positions.length;

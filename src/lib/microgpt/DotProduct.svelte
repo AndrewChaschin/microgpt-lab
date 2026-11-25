@@ -1,7 +1,10 @@
 <script lang="ts">
-	import { fmt, t } from '$lib/i18n';
+	import { fmt, mathNumber, t } from '$lib/i18n';
+	import Formula from './Formula.svelte';
 	import ColumnValues from './ColumnValues.svelte';
-	export let name: string;
+	export let name = '';
+	export let tex = '';
+	export let notation = '';
 	export let input: number[];
 	export let weights: number[];
 	$: products = input.map((x, k) => x * weights[k]);
@@ -9,9 +12,16 @@
 </script>
 
 <details>
-	<summary>{name} ≈ <strong>{$fmt(result)}</strong></summary>
+	<summary
+		>{#if tex}<Formula
+				inline
+				{notation}
+				tex={String.raw`${tex}\approx ${$mathNumber(result)}`}
+			/>{:else}{name}
+			≈ <strong>{$fmt(result)}</strong>{/if}</summary
+	>
 	<p>
-		{$t('Умножаем каждую координату входа на вес в той же колонке и складываем все')}
+		{$t('Умножаем каждую координату входа на соответствующий вес и складываем все')}
 		{input.length}
 		{$t('произведений.')}
 	</p>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fmt, t, type Translate } from '$lib/i18n';
-	import { boundary, vocabulary, type Lesson } from './model';
+	import type { Lesson } from './model';
+	import { corpora } from './corpora';
 	import { blockName, connections, type Operation } from './operationGraph';
 	import { signalTables, type Signal } from './signals';
 
@@ -37,6 +38,7 @@
 			signal: { ...base, edge }
 		}));
 	}
+	$: ({ boundary, vocabulary } = corpora[lesson.language]);
 	$: tokenLabel = (id: number) => (id === boundary ? $t('конец') : vocabulary[id]);
 	function series(signal: Signal, after: boolean, lesson: Lesson, position: number, tr: Translate) {
 		const frames = after && lesson.afterPositions ? lesson.afterPositions : lesson.positions;

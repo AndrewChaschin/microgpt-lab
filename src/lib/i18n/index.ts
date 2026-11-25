@@ -18,3 +18,9 @@ export const fmt = derived(
 	language,
 	(locale) => new Intl.NumberFormat(locale, { maximumSignificantDigits: 4 }).format
 );
+
+// Keep a decimal comma together inside a typeset number.
+export const mathNumber = derived(
+	fmt,
+	(format) => (value: number) => format(value).replace(',', '{,}')
+);

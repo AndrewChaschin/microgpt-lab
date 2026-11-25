@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n';
-	import { boundary, vocabulary, words } from './model';
+	import { corpora } from './corpora';
 	import type { Snapshot } from './training.worker';
 
 	export let snapshot: Snapshot;
 	let wordIndex = 0;
 	let position = 0;
+	$: ({ boundary, vocabulary, words } = corpora[snapshot.lesson.language]);
 	$: number = new Intl.NumberFormat($language, { maximumFractionDigits: 5 });
 	$: percent = new Intl.NumberFormat($language, { style: 'percent', maximumSignificantDigits: 3 });
 	$: symbol = (id: number) => (id === boundary ? $t('конец слова') : vocabulary[id]);

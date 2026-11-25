@@ -1,5 +1,75 @@
 export const english: Record<string, string> = {
-	'Язык интерфейса': 'Interface language',
+	где: 'where',
+	'$t$ — позиция входа в слове, $\\mathrm{id}$ — номер прочитанного символа в словаре.':
+		'$t$ is the input position in the word, and $\\mathrm{id}$ is the vocabulary index of the character read.',
+	'$E$ — таблица символов, $P$ — таблица позиций, $x$ — сумма двух выбранных строк. Первый индекс выбирает строку, второй — координату. Знак $\\approx$ отмечает округление.':
+		'$E$ is the character table, $P$ the position table, and $x$ the sum of the two selected rows. The first index selects a row and the second a coordinate. The sign $\\approx$ marks a rounded value.',
+	'$b$ — результат первой нормировки, $u$ — второй. В числителе показана выбранная координата, в знаменателе — корень из среднего квадрата всех координат с добавкой $10^{-5}$ под корнем.':
+		'$b$ is the result of the first normalization, and $u$ of the second. Each numerator is the selected coordinate. Its denominator is the square root of the mean of all squared coordinates plus $10^{-5}$, with the addition inside the root.',
+	'$Q$ — запрос, $K$ — ключ, $V$ — значение. В показанном произведении строка соответствующей матрицы весов выбирает выходную координату, а $k$ перебирает координаты нормированного входа $u$.':
+		'$Q$ is the query, $K$ the key and $V$ the value. In this product a row of the corresponding weight matrix selects the output coordinate, and $k$ runs over the normalized input $u$.',
+	'$s_i$ — оценка позиции $i$, $\\alpha_i$ — её доля внимания. В числителе первой дроби перемножаются координаты $k$ запроса $Q$ и ключа $K$ позиции $i$. Под корнем стоит ширина головы. Вторая дробь делит экспоненту оценки на сумму экспонент по доступным позициям $r$.':
+		'$s_i$ is the score of position $i$, and $\\alpha_i$ is its attention share. The first numerator pairs coordinates $k$ of query $Q$ and the key $K$ at $i$. The head width appears under the square root. The second fraction divides the exponential of the score by the sum of exponentials over available positions $r$.',
+	'$s$ — позиция источника, $\\alpha_s$ — её доля внимания. Координата общего вектора $c$ складывается из соответствующих координат значений $V$, взятых с этими долями.':
+		'$s$ is a source position, and $\\alpha_s$ its attention share. This coordinate of the combined vector $c$ is the sum of the matching value coordinates in $V$, weighted by those shares.',
+	'$b$ — нормированный вход, $c$ — объединённые ответы голов, $O$ — матрица весов, которая их смешивает. Координата выхода $a$ получает исходное число и поправку из $Oc$.':
+		'$b$ is the normalized input, $c$ combines the heads’ outputs, and $O$ is the weight matrix that mixes them. Each output coordinate in $a$ receives its original value plus the correction from $Oc$.',
+	'$a$ — выход внимания, $N(a)$ — тот же вектор после нормировки. Число в знаменателе задаёт масштаб для всех его координат.':
+		'$a$ is the attention output and $N(a)$ is its normalized vector. The denominator sets the scale for all its coordinates.',
+	'$z$ — отклик первого слоя. Индекс $k$ перебирает координаты нормированного входа $N(a)$, а выбранная строка матрицы $W_1$ задаёт вес каждой из них.':
+		'$z$ is the first layer’s response. Index $k$ runs over the normalized input coordinates $N(a)$, and the selected row of $W_1$ assigns a weight to each.',
+	'$z$ — отклик до активации. Функция $\\operatorname{ReLU}$ сравнивает его с нулём и передаёт дальше большее из этих чисел.':
+		'$z$ is the response before activation. The function $\\operatorname{ReLU}$ compares it with zero and passes on the larger value.',
+	'$z_k$ — отклик первого слоя с номером $k$. После $\\operatorname{ReLU}$ он умножается на вес из матрицы $W_2$. Сумма этих вкладов даёт координату поправки $c_2$.':
+		'$z_k$ is first-layer response $k$. After $\\operatorname{ReLU}$ it is multiplied by a weight from $W_2$. The sum of these contributions gives one coordinate of the correction $c_2$.',
+	'$h$ — выход блока. Первое слагаемое пришло с выхода внимания, второе — поправка, рассчитанная вторым слоем.':
+		'$h$ is the block output. The first term comes from attention, and the second is the correction computed by the second layer.',
+	'$z$ — оценки символов, $h$ — выход блока. Строка матрицы $W$ соответствует целевому символу, а $k$ перебирает координаты, участвующие в его оценке.':
+		'$z$ contains character scores and $h$ is the block output. The row of $W$ corresponds to the target character, and $k$ runs over the coordinates contributing to its score.',
+	'$m$ — наибольшая оценка, $z_k$ — оценка символа $k$. Функция $\\exp$ переводит сдвинутую оценку в положительное число. Деление на сумму по всему словарю даёт вероятность цели из вектора $p$.':
+		'$m$ is the highest score, and $z_k$ is the score of character $k$. The exponential $\\exp$ turns a shifted score into a positive number. Dividing by the sum over the vocabulary gives the target probability from $p$.',
+	'$\\ell$ — потери на выбранной позиции, $p$ — вектор вероятностей. Индекс у $p$ выбирает правильный символ, а $\\ln$ — натуральный логарифм его вероятности.':
+		'$\\ell$ is the loss at the selected position, and $p$ is the probability vector. The index on $p$ selects the correct character, and $\\ln$ is the natural logarithm of its probability.',
+	'$\\ell_t$ — потери на позиции $t$. Сумма охватывает все предсказания, включая конец слова. $L$ — средние потери за одно предсказание.':
+		'$\\ell_t$ is the loss at position $t$. The sum includes every prediction, including the end marker. $L$ is the mean loss per prediction.',
+	'$g(x)$ — градиент по сумме векторов. В градиенте таблицы символов $g(E)$ складываются вклады всех вхождений буквы. В градиент таблицы позиций $g(P)$ попадает вклад только выбранной позиции.':
+		'$g(x)$ is the gradient for the sum of the vectors. The character table gradient $g(E)$ collects contributions from every occurrence of that letter. The position table gradient $g(P)$ receives the contribution from just the chosen position.',
+	'$g(u)$ — градиент по нормированному входу. Показанная координата собирает вклады запроса, ключа и значения.':
+		'$g(u)$ is the gradient for the normalized input. The coordinate shown collects contributions from the query, key and value.',
+	'$g(V)$ — градиент по вектору значения в выбранной позиции. В этой координате складываются вклады всех позиций, где голова использовала это значение.':
+		'$g(V)$ is the gradient for the value vector at the selected position. This coordinate sums contributions from every position where the head used this value.',
+	'$g(a)$ — градиент по выходу внимания. Первое слагаемое приходит напрямую через сложение, второе проходит через слои MLP.':
+		'$g(a)$ is the gradient for the attention output. The first term comes directly through the addition, and the second passes through the MLP layers.',
+	'$g(h)$ — градиент по выходу блока, $g(z)_k$ — градиент по оценке символа $k$. Вес матрицы $W$ определяет вклад этой оценки в выбранную координату.':
+		'$g(h)$ is the gradient for the block output, and $g(z)_k$ is the gradient for character score $k$. The weight in $W$ scales that score’s contribution to the selected coordinate.',
+	'$g(z)$ — градиент по оценкам символов, $p$ — их вероятности. Индекс выбирает правильный символ, поэтому из его вероятности вычитается $1$. Знаменатель — число предсказаний в слове, включая конец.':
+		'$g(z)$ is the gradient for the character scores, and $p$ contains their probabilities. The index selects the correct character, so $1$ is subtracted from its probability. The denominator counts all predictions for the word, including its end.',
+	'$g(v)$ — {gradient} средней ошибки слова по величине $v$. Для одной координаты это {derivative}. Знак {add} означает, что вклад прибавляют к уже накопленному.':
+		'$g(v)$ is the {gradient} of the mean word loss with respect to $v$. For one coordinate this is a {derivative}. The {add} sign adds the contribution to the accumulated gradient.',
+	'Первая координата при чтении «{letter}»': 'First coordinate when reading “{letter}”',
+	Прочитано: 'Read so far',
+	'На примере слова «{word}»': 'In the word “{word}”',
+	'Для «{symbol}» модель читает строку {row} таблицы E. Эта же строка будет использована при следующей встрече символа.':
+		'For “{symbol}”, the model reads row {row} of E. It will use the same row the next time this character appears.',
+	'На входе «{symbol}», позиция {row}. Модель открывает строку {row} таблицы P. В другом слове на этом месте она возьмёт ту же строку.':
+		'The input is “{symbol}” at position {row}. The model reads row {row} of P. It uses that same row at this position in every word.',
+	'Первый вес строки был равен {before}. После шага он равен {after}.':
+		'The first weight in this row was {before} before the step. After the step it is {after}.',
+	'Первый вес строки равен {value}. Вместе с остальными числами строки он поступает в следующий блок.':
+		'The first weight in this row is {value}. It goes to the next block along with the other numbers in the row.',
+	'Модель должна предсказать «{target}». До шага она давала этому ответу {before}, после обновления модели — {after}.':
+		'The next character should be “{target}”. Its probability was {before} before the step and {after} after the model updated its weights.',
+	'Почему в строке {width} чисел?': 'Why are there {width} numbers in a row?',
+	'Число {width} выбрано для этой модели. Каждая координата — отдельная настройка. При обучении одни сочетания помогают предсказывать, какие буквы часто встречаются рядом, другие могут оказаться полезными для предсказания конца слова. Какие различия пригодятся, зависит от учебных примеров.':
+		'The designer chose a width of {width} for this model. Each coordinate can be adjusted separately. Some combinations can help predict which letters tend to occur together, while others may help predict a word ending. Which distinctions matter depends on the training examples.',
+	'В E по строке на каждую букву учебного алфавита и ещё одна для границы слова.':
+		'E has one row per letter in the training alphabet and one more for the word boundary.',
+	'В P по строке на каждую предусмотренную моделью позицию.':
+		'P has one row per position the model can handle.',
+	'Получается {rows} × {width} = {count} обучаемых весов в этой таблице.':
+		'That gives {rows} × {width} = {count} trainable weights in this table.',
+	'Даже при ширине 8 у каждой буквы свой номер и своя строка. Труднее другое — подобрать представления, которые передают сразу несколько полезных различий между буквами. Ширина 32 даёт больше свободы сочетать признаки, но требует больше данных, чтобы отличить закономерность от случайного совпадения. Проверить пользу такой ширины можно по прогнозам на незнакомых словах.':
+		'Even at width 8, every letter has its own ID and row. The harder task is finding representations that capture several useful distinctions between letters at once. Width 32 gives the model more freedom to combine features, but more data may be needed to separate patterns from coincidences. Predictions on unseen words can show whether the extra width helps.',
 	'Обучить на слове «{word}»': 'Train on “{word}”',
 	'Цикл {cycle} · {done} из {total} слов': 'Epoch {cycle} · {done} of {total} words',
 	'Вычисляем начальную ошибку по всем {count} словам…':
@@ -88,7 +158,7 @@ export const english: Record<string, string> = {
 	начало: 'start',
 	'Текущий масштаб': 'Current zoom',
 	'Поле схемы предсказания и обучения': 'Prediction and training diagram viewport',
-	'Умножаем каждую координату входа на вес в той же колонке и складываем все':
+	'Умножаем каждую координату входа на соответствующий вес и складываем все':
 		'Multiply each input coordinate by the weight in the same column, then add all',
 	'произведений.': 'products.',
 	Вес: 'Weight',
@@ -99,7 +169,7 @@ export const english: Record<string, string> = {
 	'Подготовка входа': 'Input preparation',
 	'Блок трансформера': 'Transformer block',
 	'Выход модели': 'Model output',
-	'microgpt · Предсказание и обучение': 'microgpt · Prediction and training',
+	'Предсказание и обучение': 'Prediction and training',
 	Обучить: 'Train',
 	Сбросить: 'Reset',
 	из: 'of',
@@ -180,8 +250,8 @@ export const english: Record<string, string> = {
 	'поправка за шаг': 'change in this step',
 	'до обновления': 'before the update',
 	'после обновления': 'after the update',
-	'Прямой проход читает эту матрицу. Обратный вычисляет её градиент по слову. Adam использует градиент, чтобы получить веса следующего шага.':
-		'The forward pass reads this matrix. The backward pass computes its gradient over the word. Adam uses the gradient to update the weights for the next step.',
+	'Каждая ячейка — один вес. Модель использует одни и те же числа для всех слов. «До шага» и «После Adam» показывают значения ячеек, а «Поправка» — на сколько изменился каждый вес.':
+		'Each cell holds one weight. The model uses the same values for every word. “Before the step” and “After Adam” show the cell values. “Change” shows how much each weight moved.',
 	'Значения общей матрицы': 'Shared matrix values',
 	'Открыть подробный разбор': 'Open detailed explanation',
 	Поправка: 'Change',
@@ -213,11 +283,11 @@ export const english: Record<string, string> = {
 	'Суммарный градиент gu[': 'Total gradient gu[',
 	'. Дальше он проходит через нормировку.': '. It then passes through normalization.',
 	'Значение V позиции': 'The value V at position',
-	'попадает в смеси этой и всех более поздних позиций. Вклад каждой смеси равен её градиенту, умноженному на долю внимания к позиции':
-		'contributes to the mixtures at this and all later positions. Each mixture contributes its gradient multiplied by the attention share for position',
-	'Позиция смеси': 'Mixture position',
+	'участвует во взвешенной сумме в этой и каждой последующей позиции. Вклад в градиент значения равен градиенту по выходу головы в соответствующей позиции, умноженному на долю внимания к позиции':
+		'contributes to the weighted sum at this and every later position. Each contribution to the value gradient equals the head output gradient at that position times its attention share for position',
+	'Позиция запроса': 'Query position',
 	'Доля α': 'Share α',
-	'g смеси': 'Mixture gradient',
+	'Градиент по выходу головы': 'Head output gradient',
 	Вклад: 'Contribution',
 	'Сумма вкладов даёт gV[': 'Adding the contributions gives gV[',
 	'Сигнал от выхода h идёт к входу внимания a двумя путями. Сложение передаёт gₕ напрямую. Другой путь идёт через второй слой, ReLU, первый слой и нормировку.':
@@ -252,13 +322,12 @@ export const english: Record<string, string> = {
 		'. For each available position s, multiply matching coordinates of the current query Q and key K at s. Add the products and divide by √',
 	'оценка[s] = Σ Qₖ × Kₛₖ / √': 'score[s] = Σ Qₖ × Kₛₖ / √',
 	'α[s] = exp(оценка[s]) / Σ exp(оценка)': 'α[s] = exp(score[s]) / Σ exp(score)',
-	'Доли α суммируются до единицы. Каждая доля определяет вклад значения V в смесь для координаты':
-		'The shares α sum to one. Each share controls how much V contributes to the mixture at coordinate',
+	'Доли α суммируются до единицы. Каждая доля определяет вклад значения V в выход головы по координате':
+		'The shares α sum to one. Each share controls how much V contributes to the head output at coordinate',
 	Оценка: 'Score',
-	'смесь[': 'mix[',
-	'Проекция смеси на строку ': 'Project the mixture onto row ',
+	'Скалярное произведение объединённого вектора голов со строкой ':
+		'Dot product of the concatenated head outputs with row ',
 	' матрицы O': ' of matrix O',
-	'] + (O · смесь)[': '] + (O · mix)[',
 	'b — нормированный вход блока, a — выход самовнимания.':
 		'b is the normalized block input and a is the self-attention output.',
 	'Выход внимания a нормируется перед первым слоем MLP. Нормировка N делит все координаты на √(среднее квадратов + 0,00001).':
@@ -314,54 +383,52 @@ export const english: Record<string, string> = {
 		'Explore how a small transformer predicts the next letter and learns from words, one operation at a time.',
 	'Чтение символа': 'Read character',
 	'слово[t − 1]': 'word[t − 1]',
-	'Поиск ID': 'Look up ID',
+	'Номер символа': 'Character ID',
 	'словарь[символ]': 'vocab[char]',
 	'ID символа': 'Character ID',
 	'Номер позиции': 'Position index',
-	'Строка E': 'Look up E row',
-	'Сумма по ID': 'Sum by ID',
-	'Строка P': 'Look up P row',
-	'Строка позиции': 'Position row',
+	'Вектор символа': 'Character vector',
+	'Вклад в строку E': 'E row contribution',
+	'Вектор позиции': 'Position vector',
+	'Вклад в строку P': 'P row contribution',
 	Сумма: 'Add',
-	Разветвление: 'Split gradient',
-	'Производная N': 'N derivative',
+	'Копия градиента': 'Copy gradient',
+	'Градиент по x': 'Gradient for x',
+	'Градиент по b': 'Gradient for b',
+	'Градиент по a': 'Gradient for a',
 	Запрос: 'Query',
-	'Вклад Q': 'Q contribution',
+	'Вклад от Q': 'From Q',
 	Ключ: 'Key',
-	'Вклад K': 'K contribution',
-	'Вклад V': 'V contribution',
+	'Вклад от K': 'From K',
+	'Вклад от V': 'From V',
 	'Сходство Q и K': 'Q–K similarity',
-	'Градиенты Q, K': 'Q, K gradients',
+	'Градиенты по Q и K': 'Q and K gradients',
 	Масштабирование: 'Scale',
-	'Softmax внимания': 'Attention softmax',
+	'Доли внимания': 'Attention weights',
 	'Производная softmax': 'Softmax derivative',
-	'Смесь в голове': 'Mix values',
-	'Вклады в α и V': 'Gradients for α and V',
+	'Взвешенная сумма': 'Weighted sum',
+	'Градиенты по α и V': 'α and V gradients',
 	'Соединение голов': 'Concatenate heads',
 	'Разделение голов': 'Split heads',
 	'gₘ = срез g꜀': 'gₘ = slice of g꜀',
 	'Выходная проекция': 'Output projection',
-	'Градиент смеси': 'Mixture gradient',
-	'Прибавление входа': 'Add residual',
+	'Градиент по входу': 'Input gradient',
+	'Остаточная связь': 'Residual connection',
 	Расширение: 'Expand',
-	'Градиент входа': 'Input gradient',
 	'Производная ReLU': 'ReLU derivative',
 	Сжатие: 'Contract',
-	'Градиент ReLU': 'ReLU gradient',
 	'Оценки символов': 'Character scores',
-	'Градиент h': 'Gradient of h',
+	'Градиент по h': 'Gradient for h',
 	Выход: 'Output',
-	'Softmax выхода': 'Output softmax',
-	'Выбор максимума': 'Pick maximum',
-	'Выбор цели': 'Select target',
+	'Выбор символа': 'Select character',
+	'Вероятность цели': 'Target probability',
 	'p* = p[ID цели]': 'p* = p[target ID]',
-	'Вклад в p цели': 'Target p gradient',
+	'Градиент по p': 'Gradient for p',
 	'gₚ[цель] = gₚ*': 'gₚ[target] = gₚ*',
 	Логарифм: 'Logarithm',
 	'Производная ln': 'Derivative of ln',
 	'Смена знака': 'Negate',
-	'Среднее по слову': 'Mean over word',
-	Распределение: 'Distribute',
+	'Доля градиента': 'Gradient share',
 	буква: 'letter',
 	'W выхода': 'W out',
 	'Символ на входе': 'Input character',

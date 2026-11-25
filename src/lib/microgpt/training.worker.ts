@@ -1,8 +1,8 @@
+import type { Language } from '$lib/i18n';
 import {
 	MicroGpt,
 	corpusOrder,
 	corpusStopping,
-	words,
 	type Checkpoint,
 	type Lesson,
 	type Prediction,
@@ -10,7 +10,7 @@ import {
 } from './model';
 
 export type TrainingRequest =
-	| { type: 'reset'; prefix?: string }
+	| { type: 'reset'; language?: Language; prefix?: string }
 	| { type: 'predict'; prefix: string }
 	| { type: 'train-corpus' }
 	| { type: 'word'; index: number; prefix?: string }
@@ -54,11 +54,11 @@ export type TrainingResponse =
 
 const post = (message: TrainingResponse) => globalThis.postMessage(message);
 
-let model = new MicroGpt();
-let lesson = model.preview();
+let model: MicroGpt;
+let lesson: Lesson;
 let history: (HistoryEntry & { checkpoint: Checkpoint })[] = [];
 let viewedStep = 0;
-let viewedModel = model;
+let viewedModel: MicroGpt;
 
 let transfer: Snapshot['transfer'];
 function inspect(step: number, address?: WeightAddress) {
@@ -130,6 +130,7 @@ function previewWord(word: string) {
 
 function trainCorpus() {
 	const selectedWord = lesson.word;
+	const { words } = model.corpus;
 	const { patience, minImprovement } = corpusStopping;
 	let metrics = evaluateCurrentModel().training;
 	let best = { cycle: 0, metrics, state: model.checkpoint(), history: history.slice() };
@@ -138,7 +139,7 @@ function trainCorpus() {
 	corpusResult = undefined;
 	try {
 		for (let cycle = 1; ; cycle++) {
-			const order = corpusOrder(model.step);
+			const order = corpusOrder(model.step, words);
 			for (const [i, word] of order.entries()) {
 				if (i % 10 === 0)
 					post({ type: 'corpus-progress', progress: { cycle, completed: i, ...metrics } });
@@ -179,14 +180,14 @@ globalThis.onmessage = ({ data }: MessageEvent<TrainingRequest>) => {
 			case 'reset':
 				evaluation = undefined;
 				corpusResult = undefined;
-				model = new MicroGpt();
+				model = new MicroGpt(undefined, data.language);
 				lesson = model.preview();
 				history = [];
 				viewedStep = 0;
 				viewedModel = model;
 				break;
 			case 'word': {
-				const word = words[data.index];
+				const word = model.corpus.words[data.index];
 				if (!word) throw new Error('Нет такого слова в корпусе');
 				const record = history
 					.slice()

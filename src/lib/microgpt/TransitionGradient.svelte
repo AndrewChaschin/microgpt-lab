@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { fmt, t } from '$lib/i18n';
+	import { fmt, mathNumber, t } from '$lib/i18n';
 	import { headWidth, type Lesson, type Weight } from './model';
+	import Formula from './Formula.svelte';
 	import ColumnValues from './ColumnValues.svelte';
 	import DotProduct from './DotProduct.svelte';
 	export let lesson: Lesson;
@@ -37,10 +38,13 @@
 			}
 		]}
 	/>
-	<p>
-		gE[{f.token}, {j}] ≈ {$fmt(f.weights.E[j].gradient)}{$t('. Для позиции')}
-		{position} gP[{position}, {j}] = gₓ[{j}] ≈ {$fmt(g.combined[j])}.
-	</p>
+	<Formula
+		notation={$t(
+			'$g(x)$ — градиент по сумме векторов. В градиенте таблицы символов $g(E)$ складываются вклады всех вхождений буквы. В градиент таблицы позиций $g(P)$ попадает вклад только выбранной позиции.'
+		)}
+		tex={String.raw`g(E)_{${f.token},${j}}\approx ${$mathNumber(f.weights.E[j].gradient)}
+g(P)_{${position},${j}}=g(x)_{${j}}\approx ${$mathNumber(g.combined[j])}`}
+	/>
 {:else if index === 2}
 	<p>
 		{$t(
@@ -52,22 +56,23 @@
 			weights={column(name as Weight, j)}
 			input={[g.query, g.key, g.value][k]}
 		/>{/each}
-	<p>
-		{$t('Суммарный градиент gu[')}{j}] ≈ {$fmt(g.normalized[j])}{$t(
-			'. Дальше он проходит через нормировку.'
+	<Formula
+		notation={$t(
+			'$g(u)$ — градиент по нормированному входу. Показанная координата собирает вклады запроса, ключа и значения.'
 		)}
-	</p>
+		tex={String.raw`g(u)_{${j}}\approx ${$mathNumber(g.normalized[j])}`}
+	/>
 {:else if index === 3}
 	<p>
 		{$t('Значение V позиции')}
 		{position}
 		{$t(
-			'попадает в смеси этой и всех более поздних позиций. Вклад каждой смеси равен её градиенту, умноженному на долю внимания к позиции'
+			'участвует во взвешенной сумме в этой и каждой последующей позиции. Вклад в градиент значения равен градиенту по выходу головы в соответствующей позиции, умноженному на долю внимания к позиции'
 		)}
 		{position}.
 	</p>
 	<ColumnValues
-		firstHeading={$t('Позиция смеси')}
+		firstHeading={$t('Позиция запроса')}
 		rowLabels={lesson.positions.slice(position).map((_, k) => String(position + k))}
 		columns={[
 			{
@@ -75,7 +80,7 @@
 				before: lesson.positions.slice(position).map((v) => v.attention[head][position])
 			},
 			{
-				name: $t('g смеси'),
+				name: $t('Градиент по выходу головы'),
 				before: lesson.positions.slice(position).map((v) => v.backward.merged[j])
 			},
 			{
@@ -86,7 +91,12 @@
 			}
 		]}
 	/>
-	<p>{$t('Сумма вкладов даёт gV[')}{j}] ≈ {$fmt(g.value[j])}.</p>
+	<Formula
+		notation={$t(
+			'$g(V)$ — градиент по вектору значения в выбранной позиции. В этой координате складываются вклады всех позиций, где голова использовала это значение.'
+		)}
+		tex={String.raw`g(V)_{${j}}\approx ${$mathNumber(g.value[j])}`}
+	/>
 {:else if index === 4}
 	<p>
 		{$t(
@@ -103,11 +113,12 @@
 		{Number(f.expanded[j] > 0)}{$t(', поэтому сигнал к z[')}{j}{$t('] равен')}
 		{$fmt(g.expanded[j])}.
 	</p>
-	<p>
-		{$t('На входе блока оба пути складываются. gₐ[')}{j}] ≈ {$fmt(g.hidden[j])} + ({$fmt(
-			g.attended[j] - g.hidden[j]
-		)}) ≈ {$fmt(g.attended[j])}.
-	</p>
+	<Formula
+		notation={$t(
+			'$g(a)$ — градиент по выходу внимания. Первое слагаемое приходит напрямую через сложение, второе проходит через слои MLP.'
+		)}
+		tex={String.raw`g(a)_{${j}}\approx ${$mathNumber(g.hidden[j])}+\bigl(${$mathNumber(g.attended[j] - g.hidden[j])}\bigr)\approx ${$mathNumber(g.attended[j])}`}
+	/>
 {:else if index === 5}
 	<p>
 		{$t('Координата h[')}{j}{$t(
@@ -115,7 +126,10 @@
 		)}
 	</p>
 	<DotProduct
-		name={'gₕ[' + j + '] = Σ W[k, ' + j + $t('] × g оценки[k]')}
+		notation={$t(
+			'$g(h)$ — градиент по выходу блока, $g(z)_k$ — градиент по оценке символа $k$. Вес матрицы $W$ определяет вклад этой оценки в выбранную координату.'
+		)}
+		tex={String.raw`g(h)_{${j}}=\sum_k W_{k,${j}}\,g(z)_k`}
 		weights={column('Выход', j)}
 		input={g.logits}
 	/>
@@ -125,11 +139,12 @@
 			'Совместная производная softmax и ошибки −ln(p цели) по оценке символа k равна (pₖ − yₖ) / N. Для правильного символа y = 1, для остальных y = 0. Деление на N учитывает усреднение ошибки по слову.'
 		)}
 	</p>
-	<p>
-		{$t('Для цели с ID')}
-		{f.target}
-		{$t('получаем (')}{$fmt(f.probabilities[f.target])} − 1) / {n} ≈ {$fmt(g.targetLogit)}.
-	</p>
+	<Formula
+		notation={$t(
+			'$g(z)$ — градиент по оценкам символов, $p$ — их вероятности. Индекс выбирает правильный символ, поэтому из его вероятности вычитается $1$. Знаменатель — число предсказаний в слове, включая конец.'
+		)}
+		tex={String.raw`g(z)_{${f.target}}=\frac{p_{${f.target}}-1}{${n}}\approx\frac{${$mathNumber(f.probabilities[f.target])}-1}{${n}}\approx ${$mathNumber(g.targetLogit)}`}
+	/>
 {/if}
 
 <style>

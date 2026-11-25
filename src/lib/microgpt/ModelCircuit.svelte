@@ -13,6 +13,7 @@
 	import type { ForwardPosition, Lesson, Weight } from './model';
 	import type SignalProbe from './SignalProbe.svelte';
 	import CircuitEdge from './CircuitEdge.svelte';
+	import { corpora } from './corpora';
 	import OutputBranches from './OutputBranches.svelte';
 	export let frame: ForwardPosition;
 	export let probe: SignalProbe;
@@ -116,6 +117,7 @@
 			{/each}
 			{#if !reverse}
 				<OutputBranches
+					corpus={corpora[lesson.language]}
 					{probe}
 					{frame}
 					active={phase !== 2 && phase !== 3 ? current.id : undefined}

@@ -18,7 +18,7 @@ export const englishGlossary = {
 	corpus: {
 		title: 'Corpus',
 		description:
-			'A collection of texts used for training or analysis. The training corpus in this lab consists of Russian words.'
+			'A collection of texts used for training or analysis. The training corpus in the English version consists of 100 English words.'
 	},
 	vector: {
 		title: 'Vector and coordinates',
@@ -33,12 +33,12 @@ export const englishGlossary = {
 	embedding: {
 		title: 'Embedding',
 		description:
-			'A vector that represents an object, such as a token or its position. The model learns the numbers in these vectors during training.'
+			'A numerical representation of a character or position. Picture an index card with room for several numbers. The letter ID locates its card, and the numbers on the card feed the prediction. They start as small random values. Training adjusts them using the loss on the next character.'
 	},
 	tokenEmbedding: {
 		title: 'Token embedding · row of E',
 		description:
-			'The row of E selected by the token ID. The same ID selects the same row at every position. Each row in this model contains 16 numbers.'
+			'All the numbers in the row of E for one character. If the letter “a” appears three times, the model reads the same row three times. All three occurrences can contribute to its update.'
 	},
 	positionEmbedding: {
 		title: 'Position embedding · row of P',
@@ -53,12 +53,12 @@ export const englishGlossary = {
 	weights: {
 		title: 'Model parameters and weights',
 		description:
-			'Numbers adjusted during training and used when processing new inputs. For example, a weight in a linear layer controls how much one input coordinate contributes to an output coordinate.'
+			'Picture a volume dial. If a signal is 3 and the dial sets a multiplier of 0.5, the output is 1.5. A weight in a linear layer works like that dial. In the letter table, a weight serves as one coordinate of the letter itself. Training adjusts both kinds using prediction errors, and the model uses them again on later words.'
 	},
 	loss: {
 		title: 'Loss function',
 		description:
-			'A rule that turns prediction quality into a number that training seeks to reduce. Assigning less probability to the expected character gives a larger loss.'
+			'A number measuring how surprising the correct answer was to the model. If the correct letter had probability 0.9, its loss is small. If it had probability 0.01, its loss is large. The word loss averages these values over all positions.'
 	},
 	summation: {
 		title: 'Summation · Σ',
@@ -88,12 +88,12 @@ export const englishGlossary = {
 	gradient: {
 		title: 'Gradient',
 		description:
-			'The partial derivatives of the loss with respect to the coordinates of a vector or matrix. For a single number there is one derivative. The backward pass computes gradients for intermediate values and weights. The optimizer uses the weight gradients to compute an update.'
+			'A gradient measures how sensitive the loss is to a small change in each setting. Imagine feeling the slope of a hill to find which way leads downhill. A positive derivative for a weight means that a small increase in that weight would raise the loss if the others stayed fixed. The optimizer uses these sensitivities when updating the weights.'
 	},
 	backpropagation: {
 		title: 'Backpropagation',
 		description:
-			'A way to calculate how each weight affects the loss. Starting from the loss, it follows the network operations in reverse to reach the parameters.'
+			'A way to compute gradients. Starting at the prediction loss, the model traces the calculations in reverse. If a weight was used several times, those contributions add up. The optimizer then uses the resulting gradient.'
 	},
 	optimizer: {
 		title: 'Optimizer',
@@ -113,12 +113,12 @@ export const englishGlossary = {
 	head: {
 		title: 'Attention head',
 		description:
-			'A part of the attention mechanism that compares a query with keys and mixes values using its own attention shares. Each of the four heads in microgpt works with a separate group of coordinates. The results are concatenated into one vector.'
+			'A part of the attention mechanism that compares a query with keys and uses the resulting attention weights to compute a weighted sum of the value vectors. Each of the four heads in microgpt works with a separate group of coordinates. The results are concatenated into one vector.'
 	},
 	qkv: {
 		title: 'Query, key and value (Q, K, V)',
 		description:
-			'Three vectors computed from a token’s internal representation. A query is compared with keys to decide how much to take from each position. The value vectors contain the information being combined.'
+			'Think of a card index. A query describes what you want to find, a key acts like the heading on a card, and the value holds its contents. Here all three are vectors. A better match gives that position a larger share when the model combines the contents.'
 	},
 	dotProduct: {
 		title: 'Dot product',
@@ -128,7 +128,7 @@ export const englishGlossary = {
 	attentionWeights: {
 		title: 'Attention weights',
 		description:
-			'The factors applied to value vectors before adding them. A larger weight gives that value more influence. After softmax the weights for the available positions sum to one.'
+			'The shares an attention head uses to mix information from the positions read so far. Shares of 0.75 and 0.25 take three quarters of the first value and one quarter of the second. The shares sum to one. The model computes them anew for each query using its learned matrices.'
 	},
 	mlp: {
 		title: 'Multilayer perceptron (MLP)',

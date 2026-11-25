@@ -1,4 +1,6 @@
 .DS_Store
+/HANDOFF.local.md
+npm-debug.log*
 node_modules
 /build
 /.svelte-kit

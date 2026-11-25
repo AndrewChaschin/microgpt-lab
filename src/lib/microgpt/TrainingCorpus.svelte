@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { tick } from 'svelte';
-	import { words, type Lesson } from './model';
+	import type { Lesson } from './model';
+	import { corpora } from './corpora';
 	export let lesson: Lesson;
 	export let busy: boolean;
 
 	export let onWord: (index: number) => void;
 	let list: HTMLOListElement;
 	let sourceY = 50;
+	$: ({ words } = corpora[lesson.language]);
 	$: selected = words.indexOf(lesson.word);
 	$: if (list) reveal(list, selected);
 	function measure() {

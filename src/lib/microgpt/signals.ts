@@ -1,16 +1,20 @@
 import type { Translate } from '$lib/i18n';
+import { corpora, type Corpus } from './corpora';
 import {
-	boundary,
 	headWidth,
 	mostLikelyToken,
-	vocabulary,
 	type ForwardPosition,
 	type Lesson,
 	type Weight
 } from './model';
 
 export type OutputKind = 'argmax' | 'target';
-export function outputResult(frame: ForwardPosition, kind: OutputKind, t: Translate) {
+export function outputResult(
+	frame: ForwardPosition,
+	kind: OutputKind,
+	{ boundary, vocabulary }: Corpus,
+	t: Translate
+) {
 	const token = kind === 'target' ? frame.target : mostLikelyToken(frame.probabilities);
 	return {
 		token,
@@ -42,6 +46,7 @@ function connectionTables(
 	reverse: boolean,
 	t: Translate
 ): SignalTable[] {
+	const { boundary, vocabulary } = corpora[lesson.language];
 	const id = edge.from.id,
 		dest = edge.to.id;
 	const f = frames[p],
@@ -187,9 +192,10 @@ export function signalTables(
 	t: Translate,
 	chosenMoment?: 'before' | 'after' | 'gradient' | 'delta'
 ): SignalTable[] {
+	const corpus = corpora[lesson.language];
 	const { reverse, weight } = signal;
 	if (signal.output) {
-		const { symbol, token, probability } = outputResult(frames[position], signal.output, t);
+		const { symbol, token, probability } = outputResult(frames[position], signal.output, corpus, t);
 		return [
 			{
 				name: signal.output === 'target' ? t('Цель из слова') : t('Прогноз модели'),
@@ -203,7 +209,7 @@ export function signalTables(
 		return [
 			{
 				name: t('Вход в блок чтения'),
-				values: [[token === boundary ? t('начало слова') : vocabulary[token]]]
+				values: [[token === corpus.boundary ? t('начало слова') : corpus.vocabulary[token]]]
 			}
 		];
 	}

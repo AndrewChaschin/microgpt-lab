@@ -1,137 +1,11 @@
+import type { Language } from '$lib/i18n';
+import { corpora, type Corpus } from './corpora';
+
 export const width = 16;
 export const contextLength = 16;
 export const headCount = 4;
 export const headWidth = width / headCount;
 export const corpusStopping = { patience: 5, minImprovement: 0.005 } as const;
-
-export const words = [
-	'машина',
-	'машинка',
-	'машинист',
-	'малина',
-	'марка',
-	'маршрут',
-	'мама',
-	'масло',
-	'макет',
-	'магазин',
-	'математика',
-	'море',
-	'моряк',
-	'молоко',
-	'мост',
-	'монета',
-	'книга',
-	'книжка',
-	'класс',
-	'ключ',
-	'кран',
-	'краска',
-	'карта',
-	'карман',
-	'карандаш',
-	'кот',
-	'кошка',
-	'котёнок',
-	'окно',
-	'окошко',
-	'облако',
-	'огонь',
-	'огонёк',
-	'дом',
-	'домик',
-	'двор',
-	'дорога',
-	'дорожка',
-	'дерево',
-	'деревня',
-	'день',
-	'солнце',
-	'сосна',
-	'снег',
-	'снежинка',
-	'сад',
-	'север',
-	'свеча',
-	'сапог',
-	'лиса',
-	'лист',
-	'листок',
-	'лес',
-	'лесник',
-	'лодка',
-	'ложка',
-	'луна',
-	'луч',
-	'река',
-	'ручей',
-	'рыба',
-	'рыбак',
-	'работа',
-	'ракета',
-	'радуга',
-	'ромашка',
-	'пёс',
-	'письмо',
-	'парта',
-	'парк',
-	'поезд',
-	'птица',
-	'поле',
-	'пчела',
-	'шар',
-	'школа',
-	'шапка',
-	'щётка',
-	'чашка',
-	'чай',
-	'часы',
-	'чудо',
-	'ящик',
-	'ветер',
-	'ветка',
-	'заяц',
-	'зима',
-	'звезда',
-	'гриб',
-	'груша',
-	'гнездо',
-	'белка',
-	'бумага',
-	'буква',
-	'ёж',
-	'жук',
-	'хлеб',
-	'холм',
-	'цветок',
-	'экран'
-];
-export const validationWords = [
-	'машинистка',
-	'морской',
-	'книжный',
-	'снежок',
-	'лесной',
-	'садик',
-	'рыбка',
-	'веточка',
-	'котик',
-	'домовой',
-	'лампа',
-	'банан',
-	'стакан',
-	'лодочка',
-	'город',
-	'берёза',
-	'туман',
-	'стол',
-	'кукла',
-	'песок'
-];
-
-export const alphabet = [...new Set(words.join(''))].sort();
-export const boundary = alphabet.length;
-export const vocabulary = [...alphabet, '◇'];
 
 type Edge = { node: Scalar; derivative: number };
 class Scalar {
@@ -247,7 +121,7 @@ function seededRandom(seed: number) {
 }
 
 // Fisher–Yates with a repeatable seed so reset reproduces the same lesson.
-export function corpusOrder(startStep: number) {
+export function corpusOrder(startStep: number, words = corpora.ru.words) {
 	const random = seededRandom(42 + startStep);
 	const order = [...words];
 	for (let i = order.length - 1; i > 0; i--) {
@@ -346,7 +220,12 @@ export type Influence = {
 	Выход: number[][];
 	diagonal: Record<Exclude<keyof SelectedWeights, 'E' | 'P' | 'Выход'>, number[]>;
 };
-export type Checkpoint = { step: number; corpusIndex?: number; state: Float64Array };
+export type Checkpoint = {
+	language?: Language;
+	step: number;
+	corpusIndex?: number;
+	state: Float64Array;
+};
 export const trainingBlocks = [
 	{ id: 'token', name: 'Эмбеддинги букв · E', stage: 1, weight: 'E' },
 	{ id: 'position', name: 'Эмбеддинги позиций · P', stage: 1, weight: 'P' },
@@ -358,6 +237,7 @@ export const trainingBlocks = [
 type Block = (typeof trainingBlocks)[number]['id'];
 type GradientCounts = Record<Block, { active: number; total: number }>;
 export type Lesson = {
+	language: Language;
 	blocks: GradientCounts;
 	influences: Influence[];
 	word: string;
@@ -405,28 +285,36 @@ export function mostLikelyToken(probabilities: number[]) {
 
 export class MicroGpt {
 	private random = seededRandom(42);
-	private weights = {
-		token: this.matrix(vocabulary.length, width),
-		position: this.matrix(contextLength, width),
-		query: this.matrix(width, width),
-		key: this.matrix(width, width),
-		value: this.matrix(width, width),
-		attention: this.matrix(width, width),
-		expand: this.matrix(4 * width, width),
-		contract: this.matrix(width, 4 * width),
-		output: this.matrix(vocabulary.length, width)
-	};
-	private parameters = Object.values(this.weights)
-		.flat(2)
-		.map((node) => ({ node, mean: 0, square: 0 }));
-
+	private weights;
+	private parameters;
+	readonly corpus: Corpus;
+	readonly parameterCount: number;
 	step = 0;
 	private corpusIndex = 0;
-	readonly parameterCount = this.parameters.length;
-	constructor(checkpoint?: Checkpoint) {
+
+	constructor(
+		checkpoint?: Checkpoint,
+		readonly language: Language = checkpoint?.language ?? 'ru'
+	) {
+		this.corpus = corpora[language];
+		this.weights = {
+			token: this.matrix(this.corpus.vocabulary.length, width),
+			position: this.matrix(contextLength, width),
+			query: this.matrix(width, width),
+			key: this.matrix(width, width),
+			value: this.matrix(width, width),
+			attention: this.matrix(width, width),
+			expand: this.matrix(4 * width, width),
+			contract: this.matrix(width, 4 * width),
+			output: this.matrix(this.corpus.vocabulary.length, width)
+		};
+		this.parameters = Object.values(this.weights)
+			.flat(2)
+			.map((node) => ({ node, mean: 0, square: 0 }));
+		this.parameterCount = this.parameters.length;
 		if (!checkpoint) return;
 		this.step = checkpoint.step;
-		this.corpusIndex = checkpoint.corpusIndex ?? checkpoint.step % words.length;
+		this.corpusIndex = checkpoint.corpusIndex ?? checkpoint.step % this.corpus.words.length;
 		this.parameters.forEach((param, i) => {
 			param.node.value = checkpoint.state[3 * i];
 			param.mean = checkpoint.state[3 * i + 1];
@@ -441,7 +329,7 @@ export class MicroGpt {
 			state[3 * i + 1] = param.mean;
 			state[3 * i + 2] = param.square;
 		});
-		return { step: this.step, corpusIndex: this.corpusIndex, state };
+		return { language: this.language, step: this.step, corpusIndex: this.corpusIndex, state };
 	}
 
 	private get weightMatrices() {
@@ -464,7 +352,7 @@ export class MicroGpt {
 	}
 
 	get nextWord() {
-		return words[this.corpusIndex];
+		return this.corpus.words[this.corpusIndex];
 	}
 
 	private matrix(rows: number, columns: number): Matrix {
@@ -544,7 +432,11 @@ export class MicroGpt {
 	}
 
 	private traceWord(word: string) {
-		const ids = [boundary, ...Array.from(word, (letter) => alphabet.indexOf(letter)), boundary];
+		const ids = [
+			this.corpus.boundary,
+			...Array.from(word, (letter) => this.corpus.alphabet.indexOf(letter)),
+			this.corpus.boundary
+		];
 		const context: Context = { keys: [], values: [] };
 		const passes = ids.slice(0, -1).map((token, p) => ({
 			token,
@@ -724,11 +616,11 @@ export class MicroGpt {
 	}
 
 	corpusMetrics() {
-		return summarizeForecasts(words.map((word) => this.forecastWord(word)));
+		return summarizeForecasts(this.corpus.words.map((word) => this.forecastWord(word)));
 	}
 
 	validate() {
-		const forecasts = validationWords.map((word) => this.forecastWord(word));
+		const forecasts = this.corpus.validationWords.map((word) => this.forecastWord(word));
 		return { metrics: summarizeForecasts(forecasts), forecasts };
 	}
 
@@ -743,6 +635,7 @@ export class MicroGpt {
 			node.gradient = 0;
 		}
 		return {
+			language: this.language,
 			word,
 			blocks,
 			influences,
@@ -755,12 +648,14 @@ export class MicroGpt {
 	}
 
 	train(inspect = false, word = this.nextWord) {
-		if (validationWords.includes(word)) throw new Error('Это слово отложено для проверки');
+		if (this.corpus.validationWords.includes(word))
+			throw new Error('Это слово отложено для проверки');
 		const { passes, loss } = this.traceWord(word);
 		const influences = inspect ? this.lossInfluences(passes) : [];
 		backward(loss);
 		const blocks = inspect ? this.gradientCounts() : undefined;
-		if (word === this.nextWord) this.corpusIndex = (this.corpusIndex + 1) % words.length;
+		if (word === this.nextWord)
+			this.corpusIndex = (this.corpusIndex + 1) % this.corpus.words.length;
 		const rate = learningRate(this.step);
 		this.step += 1;
 		const firstCorrection = 1 - 0.85 ** this.step;
@@ -794,6 +689,7 @@ export class MicroGpt {
 		return {
 			loss: loss.value,
 			detail: {
+				language: this.language,
 				word,
 				positions,
 				afterPositions,
@@ -809,9 +705,9 @@ export class MicroGpt {
 
 	predict(prefix: string): Prediction {
 		const context: Context = { keys: [], values: [] };
-		let result = this.forward(boundary, 0, context);
+		let result = this.forward(this.corpus.boundary, 0, context);
 		for (const [p, letter] of Array.from(prefix).entries()) {
-			result = this.forward(alphabet.indexOf(letter), p + 1, context);
+			result = this.forward(this.corpus.alphabet.indexOf(letter), p + 1, context);
 		}
 		const ranked = () =>
 			numbers(result.probabilities)
@@ -821,8 +717,8 @@ export class MicroGpt {
 		let completion = prefix;
 		for (let p = prefix.length + 1; p < contextLength; p += 1) {
 			const token = mostLikelyToken(numbers(result.probabilities));
-			if (token === boundary) break;
-			completion += vocabulary[token];
+			if (token === this.corpus.boundary) break;
+			completion += this.corpus.vocabulary[token];
 			result = this.forward(token, p, context);
 		}
 		return { prefix, completion, choices };

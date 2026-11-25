@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n';
+	import type { Corpus } from './corpora';
 	import type { ForwardPosition } from './model';
 	import { connections, operations, type Operation } from './operationGraph';
 	import { outputResult, type OutputKind } from './signals';
@@ -7,6 +8,7 @@
 	import type SignalProbe from './SignalProbe.svelte';
 
 	export let active: Operation['id'] | undefined;
+	export let corpus: Corpus;
 	export let frame: ForwardPosition;
 	export let probe: SignalProbe;
 	const targetToLog = connections.find((edge) => edge.from.id === 'target')!;
@@ -23,7 +25,7 @@
 </script>
 
 {#each branches as { kind, node, label }}
-	{@const result = outputResult(frame, kind, $t)}
+	{@const result = outputResult(frame, kind, corpus, $t)}
 	{@const signal = { index: node.stage, reverse: false, output: kind }}
 	<CircuitEdge
 		{probe}

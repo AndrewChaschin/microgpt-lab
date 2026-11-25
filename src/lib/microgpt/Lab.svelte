@@ -1,24 +1,23 @@
 <script lang="ts">
-	import { language, t } from '$lib/i18n';
+	import { language, t, type Language } from '$lib/i18n';
 	import { onMount } from 'svelte';
-	import { corpusStopping, words } from './model';
-	import type {
-		CorpusProgress,
-		Snapshot,
-		TrainingRequest,
-		TrainingResponse
-	} from './training.worker';
+	import { corpusStopping } from './model';
+	import { corpora } from './corpora';
+	import { trainingSession } from './trainingSession';
 	import Flow from './Flow.svelte';
 	import Validation from './Validation.svelte';
 
-	let worker: Worker | undefined;
-	let snapshot: Snapshot | undefined;
+	const sessions = { ru: trainingSession('ru'), en: trainingSession('en') };
+	let mounted = false;
 	let position = 3;
-	let busy = true;
-	let trainingCorpus = false;
-	let progress: CorpusProgress | undefined;
 	let phase = 0;
-	let error = '';
+	let nextLanguage: Language;
+	$: nextLanguage = $language === 'ru' ? 'en' : 'ru';
+	$: session = sessions[$language];
+	$: if (mounted) session.start();
+	$: ({ busy, trainingCorpus, progress, snapshot, error } = $session);
+	$: words = corpora[$language].words;
+	$: phase = snapshot?.lesson.updated ? 4 : 0;
 
 	$: number = new Intl.NumberFormat($language, { maximumFractionDigits: 5 });
 	$: stoppingHint = $t(
@@ -46,96 +45,52 @@
 	$: positions = (afterStep && lesson?.afterPositions) || lesson?.positions || [];
 	$: recent = snapshot?.history ?? [];
 	$: peakLoss = Math.max(...recent.map((entry) => entry.loss), 0.0001);
-	function inspectStep(step: number) {
-		send({ type: 'inspect', step });
-	}
-
-	function reset() {
-		if (worker) {
-			worker.onmessage = null;
-			worker.onerror = null;
-			worker.terminate();
-		}
-		position = 3;
-		error = '';
-		progress = undefined;
-		snapshot = undefined;
-		trainingCorpus = false;
-		busy = true;
-		try {
-			worker = new Worker(new URL('./training.worker.ts', import.meta.url), { type: 'module' });
-			worker.onmessage = ({ data }: MessageEvent<TrainingResponse>) => {
-				if (data.type === 'corpus-progress') {
-					progress = data.progress;
-					if (data.snapshot) {
-						snapshot = data.snapshot;
-						phase = 0;
-					}
-					return;
-				}
-				if (data.type === 'progress') return;
-				busy = false;
-				trainingCorpus = false;
-				progress = undefined;
-				if (data.snapshot) {
-					snapshot = data.snapshot;
-					phase = snapshot.lesson.updated ? 4 : 0;
-				}
-				if (data.type === 'error') error = data.message;
-			};
-			worker.onerror = () => {
-				busy = false;
-				trainingCorpus = false;
-				progress = undefined;
-				error = 'Фоновый поток завершился. Нажмите «Сбросить», чтобы запустить модель заново.';
-			};
-			worker.postMessage({ type: 'reset' });
-		} catch {
-			busy = false;
-			error = 'Браузер не смог запустить фоновые вычисления.';
-		}
-	}
-
 	onMount(() => {
-		reset();
-		return () => worker?.terminate();
+		mounted = true;
+		return () => Object.values(sessions).forEach((session) => session.stop());
 	});
-
-	function send(message: TrainingRequest) {
-		if (!worker || busy) return;
-		error = '';
-		busy = true;
-		trainingCorpus = message.type === 'train-corpus';
-		worker.postMessage(message);
-	}
 </script>
 
 <main id="top">
 	<section class="scheme" id="scheme" aria-labelledby="scheme-title">
 		<div class="scheme-header">
-			<h1 id="scheme-title">{$t('microgpt · Предсказание и обучение')}</h1>
+			<h1 id="scheme-title">
+				<a href="https://karpathy.github.io/2026/02/12/microgpt/">microgpt</a> · {$t(
+					'Предсказание и обучение'
+				)}
+			</h1>
 			<div class="train-actions">
-				<select class="language" aria-label={$t('Язык интерфейса')} bind:value={$language}>
-					<option value="ru" lang="ru">Русский</option>
-					<option value="en" lang="en">English</option>
-				</select>
+				<button
+					class="language"
+					type="button"
+					lang={nextLanguage}
+					aria-label={nextLanguage === 'en' ? 'Switch to English' : 'Переключить на русский'}
+					on:click={() => language.set(nextLanguage)}
+					>{nextLanguage === 'en' ? 'English' : 'Русский'}</button
+				>
 				<button
 					class="primary"
 					type="button"
 					disabled={busy || !snapshot}
 					title={stoppingHint}
-					on:click={() => send({ type: 'train-corpus' })}>{$t('Обучить')}</button
+					on:click={() => session.send({ type: 'train-corpus' })}>{$t('Обучить')}</button
 				>
 				{#if lesson}
 					<button
 						type="button"
 						class="train-word"
 						disabled={busy}
-						on:click={() => send({ type: 'train', word: lesson.word, steps: 1 })}
+						on:click={() => session.send({ type: 'train', word: lesson.word, steps: 1 })}
 						>{$t('Обучить на слове «{word}»', { word: lesson.word })}</button
 					>
 				{/if}
-				<button type="button" disabled={busy && !snapshot} on:click={reset}>{$t('Сбросить')}</button
+				<button
+					type="button"
+					disabled={busy && !snapshot}
+					on:click={() => {
+						position = 3;
+						session.reset();
+					}}>{$t('Сбросить')}</button
 				>
 			</div>
 		</div>
@@ -144,109 +99,105 @@
 			<p class="error" role="alert">{$t(error)}</p>
 		{/if}
 
-		{#if snapshot && lesson && frame}
-			<div class="status-line">
-				<span
-					id="training-status"
-					role="status"
-					title={trainingCorpus || snapshot.corpusResult ? stoppingHint : undefined}
-				>
-					{#if trainingCorpus && progress}
-						{$t('Цикл {cycle} · {done} из {total} слов', {
-							cycle: progress.cycle,
-							done: progress.completed,
-							total: words.length
-						})}
-					{:else if trainingCorpus}
-						{$t('Вычисляем начальную ошибку по всем {count} словам…', { count: words.length })}
-					{:else if snapshot.corpusResult}
-						{$t('Обучение завершено · циклов {count}.', { count: snapshot.corpusResult.cycles })}
-						{snapshot.corpusResult.bestCycle
-							? $t('Лучший цикл ') + snapshot.corpusResult.bestCycle
-							: $t('Лучший результат до начала циклов')}
-					{:else}
-						{$t('Выполнено шагов')} <strong>{integer.format(snapshot.step)}</strong>
-					{/if}
-				</span>
-				{#if trainingCorpus && progress}
-					<progress
-						aria-label={$t('Слов в текущем цикле')}
-						value={progress.completed}
-						max={words.length}
-					></progress>
-				{/if}
-			</div>
-			<Validation {snapshot} />
-			{#if recent.length}
-				<div class="timeline">
-					<label
-						>{$t('Шаг на схеме')}
-						<select
-							aria-label={$t('Шаг на схеме')}
-							value={snapshot.viewedStep}
-							disabled={busy}
-							on:change={(event) => inspectStep(Number(event.currentTarget.value))}
-						>
-							{#if !snapshot.viewedStep}<option value={0} disabled>{$t('Текущие веса')}</option
-								>{/if}
-							{#each recent as entry}<option value={entry.step}>{entry.step} · {entry.word}</option
-								>{/each}
-						</select>
-					</label>
-					<div
-						class="history-bars"
-						role="group"
-						aria-label={$t('Ошибка слова до обновления по шагам')}
+		{#key $language}
+			{#if snapshot && lesson && frame}
+				<div class="status-line">
+					<span
+						id="training-status"
+						role="status"
+						title={trainingCorpus || snapshot.corpusResult ? stoppingHint : undefined}
 					>
-						{#each recent as entry}
-							<button
-								type="button"
-								disabled={busy}
-								aria-pressed={snapshot.viewedStep === entry.step}
-								aria-label={$t('Шаг ') +
-									entry.step +
-									', ' +
-									entry.word +
-									$t(', ошибка ') +
-									number.format(entry.loss)}
-								title={$t('Шаг ') +
-									entry.step +
-									' · ' +
-									entry.word +
-									' · ' +
-									number.format(entry.loss)}
-								on:click={() => inspectStep(entry.step)}
-								><i style:height={(100 * entry.loss) / peakLoss + '%'}></i></button
-							>
-						{/each}
-					</div>
+						{#if trainingCorpus && progress}
+							{$t('Цикл {cycle} · {done} из {total} слов', {
+								cycle: progress.cycle,
+								done: progress.completed,
+								total: words.length
+							})}
+						{:else if trainingCorpus}
+							{$t('Вычисляем начальную ошибку по всем {count} словам…', { count: words.length })}
+						{:else if snapshot.corpusResult}
+							{$t('Обучение завершено · циклов {count}.', { count: snapshot.corpusResult.cycles })}
+							{snapshot.corpusResult.bestCycle
+								? $t('Лучший цикл ') + snapshot.corpusResult.bestCycle
+								: $t('Лучший результат до начала циклов')}
+						{:else}
+							{$t('Выполнено шагов')} <strong>{integer.format(snapshot.step)}</strong>
+						{/if}
+					</span>
+					{#if trainingCorpus && progress}
+						<progress
+							aria-label={$t('Слов в текущем цикле')}
+							value={progress.completed}
+							max={words.length}
+						></progress>
+					{/if}
 				</div>
+				<Validation {snapshot} />
+				{#if recent.length}
+					<div class="timeline">
+						<label
+							>{$t('Шаг на схеме')}
+							<select
+								aria-label={$t('Шаг на схеме')}
+								value={snapshot.viewedStep}
+								disabled={busy}
+								on:change={(event) =>
+									session.send({ type: 'inspect', step: Number(event.currentTarget.value) })}
+							>
+								{#if !snapshot.viewedStep}<option value={0} disabled>{$t('Текущие веса')}</option
+									>{/if}
+								{#each recent as entry}<option value={entry.step}
+										>{entry.step} · {entry.word}</option
+									>{/each}
+							</select>
+						</label>
+						<div
+							class="history-bars"
+							role="group"
+							aria-label={$t('Ошибка слова до обновления по шагам')}
+						>
+							{#each recent as entry}
+								<button
+									type="button"
+									disabled={busy}
+									aria-pressed={snapshot.viewedStep === entry.step}
+									aria-label={$t('Шаг ') +
+										entry.step +
+										', ' +
+										entry.word +
+										$t(', ошибка ') +
+										number.format(entry.loss)}
+									title={$t('Шаг ') +
+										entry.step +
+										' · ' +
+										entry.word +
+										' · ' +
+										number.format(entry.loss)}
+									on:click={() => session.send({ type: 'inspect', step: entry.step })}
+									><i style:height={(100 * entry.loss) / peakLoss + '%'}></i></button
+								>
+							{/each}
+						</div>
+					</div>
+				{/if}
+				<Flow
+					{positions}
+					bind:phase
+					{snapshot}
+					{busy}
+					stages={lessonSteps}
+					position={activePosition}
+					onWord={(index) => session.send({ type: 'word', index })}
+					onPosition={(p) => (position = p)}
+				/>
+			{:else if !error}
+				<p class="loading" role="status">{$t('Подготавливаем microgpt…')}</p>
 			{/if}
-			<Flow
-				{positions}
-				bind:phase
-				{snapshot}
-				{busy}
-				stages={lessonSteps}
-				position={activePosition}
-				onWord={(index) => send({ type: 'word', index })}
-				onPosition={(p) => (position = p)}
-			/>
-		{:else if !error}
-			<p class="loading" role="status">{$t('Подготавливаем microgpt…')}</p>
-		{/if}
+		{/key}
 	</section>
 </main>
 
 <style>
-	.language {
-		border: 1px solid #b1c7ba;
-		border-radius: 0.3rem;
-		padding: 0.25rem 0.4rem;
-		background: white;
-		color: inherit;
-		font: inherit;
-	}
 	.timeline {
 		padding: 0.55rem 1rem;
 		border-bottom: 1px solid #dce6df;

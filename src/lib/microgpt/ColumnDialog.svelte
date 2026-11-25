@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { tick } from 'svelte';
-	import { boundary, vocabulary, stageWeights, type Weight, type Lesson } from './model';
+	import { stageWeights, type Weight, type Lesson } from './model';
+	import { corpora } from './corpora';
+	import PositionSumExample from './PositionSumExample.svelte';
+	import EmbeddingExample from './EmbeddingExample.svelte';
 	import OperationGuide from './OperationGuide.svelte';
 	import type { Operation } from './operationGraph';
 	import TransitionGradient from './TransitionGradient.svelte';
@@ -54,6 +57,7 @@
 		title.focus({ preventScroll: true });
 		dialog.scrollTop = 0;
 	}
+	$: ({ boundary, vocabulary } = corpora[lesson.language]);
 	$: symbol = (id: number, end = false) =>
 		id === boundary ? (end ? $t('конец') : $t('начало')) : vocabulary[id];
 	$: before = lesson.positions[position];
@@ -81,13 +85,14 @@
 	bind:this={dialog}
 	closedby="any"
 	class:operation={Boolean(primitive)}
-	on:close={() => {
-		if (!dialog.open) visible = false;
+	on:close={(event) => {
+		if (!event.currentTarget.open) visible = false;
 	}}
 	aria-labelledby="column-title"
 >
 	{#if visible}
 		<header>
+			<form method="dialog"><button aria-label={$t('Закрыть пояснение')}>×</button></form>
 			{#if primitive}<p>
 					{optimizer
 						? $t('Обновление весов')
@@ -113,7 +118,13 @@
 			</h2>
 		</header>
 		{#if primitive}
-			<OperationGuide id={optimizer ? 'adam' : primitive.id} {backward} />
+			<OperationGuide id={optimizer ? 'adam' : primitive.id} {backward}>
+				{#if !optimizer && !backward && (primitive.id === 'embedding' || primitive.id === 'position')}
+					<EmbeddingExample {lesson} {position} table={primitive.id === 'embedding' ? 'E' : 'P'} />
+				{:else if primitive.id === 'combined' && !backward}
+					<PositionSumExample {lesson} {applied} />
+				{/if}
+			</OperationGuide>
 		{:else if transition}
 			<p>
 				{stage === 0 ? $t('Учебные слова') : stages[stage - 1]}
@@ -203,6 +214,7 @@
 			{/if}
 		{:else}
 			{#if stage === 1}
+				<EmbeddingExample {lesson} {position} table={matrix === 'P' ? 'P' : 'E'} />
 				<p class="guide">
 					{$t('Каждая строка показывает одну координату. E[')}{before.token}{$t(
 						'] — вектор символа, P['
@@ -394,6 +406,22 @@
 	}
 	dialog::backdrop {
 		background: rgb(26 21 36 / 45%);
+	}
+	header {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		column-gap: 0.8rem;
+	}
+	header form {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		align-self: start;
+	}
+	header button {
+		font-size: 1.25rem;
+		padding: 0 0.6rem;
+		background: #f4f0f7;
+		border-radius: 0.3rem;
 	}
 	header p {
 		font-size: 0.8rem;
